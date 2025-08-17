@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "sqlite" // change to "postgresql" when moving to prod
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String?  // if using password gate; else null for magic-link
+  role      Role     @default(OWNER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  OWNER
+  STAFF
+}
+
+model Student {
+  id            String   @id @default(cuid())
+  name          String
+  phone         String?
+  guardian      String?
+  guardianPhone String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  fees          Fee[]
+  enrollments   Enrollment[]
+}
+
+model Batch {
+  id        String   @id @default(cuid())
+  name      String
+  subject   String
+  fee       Int
+  days      String
+  time      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  enrollments Enrollment[]
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  student   Student  @relation(fields: [studentId], references: [id])
+  studentId String
+  batch     Batch    @relation(fields: [batchId], references: [id])
+  batchId   String
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, batchId])
+}
+
+model Fee {
+  id        String   @id @default(cuid())
+  student   Student  @relation(fields: [studentId], references: [id])
+  studentId String
+  month     String   // YYYY-MM
+  due       Int
+  paid      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId, month])
+}
